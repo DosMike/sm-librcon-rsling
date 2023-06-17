@@ -177,10 +177,9 @@ public void OnConfigsExecuted() {
 		PrintToServer("Added server %s at %s:%i (PW %s)", firstarg, server.ipaddr, server.port, server.passwd);
 		if ((StrEqual(server.ipaddr, selfip_cvar) || StrEqual(server.ipaddr, selfip_public)) && server.port == selfport) {
 			strcopy(selfname, sizeof(selfname), firstarg);
-		} 
-		//else {
+		} else {
 			servers.PushArray(server);
-		//}
+		}
 	}
 	delete file;
 	PrintToServer("[RSling] Loaded %i target servers from config", servers.Length);

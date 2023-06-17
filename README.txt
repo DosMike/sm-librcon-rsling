@@ -1,4 +1,4 @@
-# Scratch repo for rsling
+# Scratch repo for LibRCON and RSling
 
 Broadcast commands between servers in the same network
 
@@ -15,6 +15,6 @@ For RSling itself:
  + The config goes into addons/sourcemod/configs/rsling.txt
  + Each line consists of `servername serverip:port rconpasswd`
     + I one contains spaces, quote the thing
-	+ Empty lines, lines starting with # and broken lines are ignored
+    + Empty lines, lines starting with # and broken lines are ignored
 
 LibRCon only has one native: `LibRCON`, have fun with it
