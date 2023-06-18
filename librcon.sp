@@ -1,6 +1,7 @@
 // Based on https://github.com/AnthonyIacono/MoreRCON
 
 #include <socket>
+#include <dhooks>
 
 #define RCON_PACKET_MAX_SIZE 4096
 
@@ -19,7 +20,7 @@
 #pragma semicolon 1
 
 //#define DEBUG
-#define PLUGIN_VERSION "23w24a"
+#define PLUGIN_VERSION "23w24b"
 
 public Plugin myinfo = {
 	name = "LibRCON",
@@ -28,6 +29,8 @@ public Plugin myinfo = {
 	version = PLUGIN_VERSION,
 	url = "https://github.com/DosMike"
 }
+
+// ===== section: send rcon requests =====
 
 stock void PrintBuffer(const char[] buffer, int buffersize) {
 	for (int i; i<buffersize; i+=16) {
@@ -324,7 +327,7 @@ static void LibRCON_OnSocketError(Socket socket, int errorType, int errorNum, Da
 }
 
 // const char[] host, int port, const char[] password, const char[] command, any data=0, LibRCON_Callback callback = INVALID_FUNCTION
-public any LibRCON_Native(Handle plugin, int numParams) {
+public any LibRCON_Send_Native(Handle plugin, int numParams) {
 	// Create an ADT for the request information
 	char buffer[RCON_PACKET_MAX_SIZE];
 	char host[16];
@@ -350,6 +353,25 @@ public any LibRCON_Native(Handle plugin, int numParams) {
 	socket.Connect(LibRCON_OnSocketConnected, LibRCON_OnSocketReceive, LibRCON_OnSocketDisconnected, host, port);
 	return 0;
 }
+
+// ===== section: dhooks/Is in WriteDataRequest =====
+
+static bool g_IsInWriteDataRequest;
+public MRESReturn OnEnterRconWriteRequest(DHookParam hParams) {
+	g_IsInWriteDataRequest = true;
+	return MRES_Ignored;
+}
+
+public MRESReturn OnLeaveRconWriteRequest(DHookParam hParams) {
+	g_IsInWriteDataRequest = false;
+	return MRES_Ignored;
+}
+
+public any LibRCON_IsCmdFromRCon_Native(Handle plugin, int numParams) {
+	return g_IsInWriteDataRequest;
+}
+
+// ===== section: test suite =====
 
 static void TestSuite() {
 	
@@ -416,7 +438,7 @@ static void TestSuite() {
 	number = StringToInt(buffer);
 	FindConVar("rcon_password").GetString(buffer, sizeof(buffer));
 	//PrintToServer("Binding to %s:%i (%s)", myip, number, buffer);
-	LibRCON(myip, number, buffer, "status", _, SelfTestResult);
+	LibRCON_Send(myip, number, buffer, "status", _, SelfTestResult);
 	
 }
 
@@ -429,9 +451,12 @@ void SelfTestResult(bool success, const char[] response, any data) {
 	PrintToServer("[LibRCON] SelfTest complete!");
 }
 
+// ===== section: actual library/plugin stuff =====
+
 bool gLate;
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max) {
-	CreateNative("LibRCON", LibRCON_Native);
+	CreateNative("LibRCON_Send", LibRCON_Send_Native);
+	CreateNative("LibRCON_IsCmdFromRCon", LibRCON_IsCmdFromRCon_Native);
 	RegPluginLibrary("LibRCON");
 	gLate=late;
 	return APLRes_Success;
@@ -448,6 +473,16 @@ public void OnPluginStart() {
 	cvPasswd = CreateConVar("librcon_password", "", "Password for outgoing rcon request", FCVAR_UNLOGGED|FCVAR_PROTECTED);
 	AddCommandListener(OnCommandRcon, "rcon");
 	RegAdminCmd("librcon", OnCommandLibRcon, ADMFLAG_RCON, "LibRCON mirror command for rcon on servers");
+	
+	GameData gdata = new GameData("librcon.games");
+	DynamicDetour detour = DynamicDetour.FromConf(gdata, "CServerRemoteAccess::WriteDataRequest()");
+	if (detour == null) {
+		PrintToServer("[LibRCON] Could not hook RCON commands, some stuff will not work");
+	} else {
+		detour.Enable(Hook_Pre, OnEnterRconWriteRequest);
+		detour.Enable(Hook_Post, OnLeaveRconWriteRequest);
+	}
+	delete gdata;
 }
 public void OnCvarTargetChange(ConVar convar, const char[] oldValue, const char[] newValue) {
 	char buffer[64];
@@ -507,7 +542,7 @@ static void svRcon(int client, const char[] command) {
 	pack.WriteCell(uid);
 	pack.WriteCell(GetCmdReplySource());
 	
-	LibRCON(strHost, iPort, passwd, command, pack, CmdRconCallback);
+	LibRCON_Send(strHost, iPort, passwd, command, pack, CmdRconCallback);
 }
 void CmdRconCallback(bool success, const char[] response, any data) {
 	DataPack pack = data;

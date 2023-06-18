@@ -1,0 +1,41 @@
+"Games" {
+	"tf" {
+		"Signatures" {
+			"CServerRemoteAccess::WriteDataRequest()" {
+				"library"	"engine"
+				"linux"		"@_ZN19CServerRemoteAccess16WriteDataRequestEP11CRConServerjPKvi"
+				"windows"	"\x55\x8B\xEC\x8B\x2A\x2A\x81\xEC\x2A\x2A\x2A\x2A\x2A\x8B\x2A\x01"
+				//lkasm  55 8B EC 8B 45 14 81 EC 4c 02 00 00 53 8B D9 01 42 60
+				//mask   55 8B EC 8B  *  * 81 EC  *  *  *  *  * 8B  * 01  *  *
+			}
+			"CServerRemoteAccess::CheckPassword()" {
+				"library"	"engine"
+				"linux"		"@_ZN19CServerRemoteAccess13CheckPasswordEP11CRConServerjiPKc"
+				// inlined on windows
+				//"windows"	"\x55\x8B\xEC\x8B\x2A\x2A\x81\xEC\x2A\x2A\x2A\x2A\x2A\x8B\x2A\x01"
+			}
+		}
+		"Functions" {
+			"CServerRemoteAccess::WriteDataRequest()" {
+				"signature" "CServerRemoteAccess::WriteDataRequest()"
+				"callconv" "thiscall"
+				"return" "void"
+				"this" "ignore"
+				"arguments" {
+					"rconserver" {
+						"type" "objectptr"
+					}
+					"id" {
+						"type" "int"
+					}
+					"dataptr" {
+						"type" "charptr"
+					}
+					"size" {
+						"type" "int"
+					}
+				}
+			}
+		}
+	}
+}

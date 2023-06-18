@@ -1,13 +1,12 @@
 #include <sourcemod>
 #include <socket>
-#include <smrcon>
 #include <steamworks>
 #include "librcon.inc"
 
 #pragma newdecls required
 #pragma semicolon 1
 
-#define PLUGIN_VERSION "23w24a"
+#define PLUGIN_VERSION "23w24b"
 
 public Plugin myinfo = {
 	name = "RSling",
@@ -23,7 +22,7 @@ enum struct ServerConfig {
 	char passwd[64];
 	
 	void Send(const char[] query, any data=0, LibRCON_Callback callback=INVALID_FUNCTION) {
-		LibRCON(this.ipaddr, this.port, this.passwd, query, data, callback);
+		LibRCON_Send(this.ipaddr, this.port, this.passwd, query, data, callback);
 	}
 }
 ArrayList servers;
@@ -174,7 +173,7 @@ public void OnConfigsExecuted() {
 		if (more == -1) strcopy(server.passwd, sizeof(ServerConfig::passwd), arg);
 		else strcopy(server.passwd, sizeof(ServerConfig::passwd), buffer[at]);
 		
-		PrintToServer("Added server %s at %s:%i (PW %s)", firstarg, server.ipaddr, server.port, server.passwd);
+		PrintToServer("Added server %s at %s:%i (PW %s)", firstarg, server.ipaddr, server.port, "*****");
 		if ((StrEqual(server.ipaddr, selfip_cvar) || StrEqual(server.ipaddr, selfip_public)) && server.port == selfport) {
 			strcopy(selfname, sizeof(selfname), firstarg);
 		} else {
@@ -213,7 +212,7 @@ public Action OnRSlingCmd(int client, int args) {
 	StripQuotes(buffer);
 	for (int i; buffer[i]; i++) if (buffer[i]==';') buffer[i]='\0'; //no multi
 	
-	if (SMRCon_IsCmdFromRCon()) {
+	if (LibRCON_IsCmdFromRCon()) {
 		ReplyToCommand(client, "Can not rsling recusively!");
 	} else {
 		//run command on this server
@@ -244,7 +243,7 @@ public Action OnNetSayCmd(int client, int args) {
 		TrimString(buffer);
 	}
 	
-	if (SMRCon_IsCmdFromRCon()) {
+	if (LibRCON_IsCmdFromRCon()) {
 		
 		PrintToChatAll("\x01\x04\07%02X%02X%02X%s", netSayColor[0], netSayColor[1], netSayColor[2], buffer);
 		SetHudTextParams(-1.0, 0.3, 5.0, netSayColor[0], netSayColor[1], netSayColor[2], 0, 2, 0.0, 0.0, 0.0);
